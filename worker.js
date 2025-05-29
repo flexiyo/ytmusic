@@ -111,7 +111,17 @@ async function searchTracksInternal(term, continuation = null) {
 			const artistsRaw = track.flexColumns[1]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs || [];
 			const artists = artistsRaw.map((r) => r?.text).join('');
 			const playsCount = track.flexColumns?.[2]?.musicResponsiveListItemFlexColumnRenderer?.text?.runs?.[0]?.text || null;
-			const images = track.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails;
+			const images = (track.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails || []).flatMap((img) =>
+				img?.url?.includes('w60-h60')
+					? [
+							img,
+							{ ...img, url: img.url.replace('w60-h60', 'w120-h120'), width: 120, height: 120 },
+							{ ...img, url: img.url.replace('w60-h60', 'w400-h400'), width: 400, height: 400 },
+							{ ...img, url: img.url.replace('w60-h60', 'w600-h600'), width: 600, height: 600 },
+					  ]
+					: []
+			);
+
 			return { videoId: track.playlistItemData.videoId, title, artists, playsCount, images };
 		})
 		.filter(Boolean);
