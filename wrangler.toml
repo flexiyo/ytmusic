@@ -1,0 +1,5 @@
+name = "ytmusic"
+main = "worker.js"
+workers_dev = true
+compatibility_date = "2025-03-27"
+compatibility_flags = ["nodejs_compat_v2"]
