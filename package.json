@@ -9,5 +9,9 @@
 	},
 	"devDependencies": {
 		"wrangler": "^4.13.1"
+	},
+	"dependencies": {
+		"express": "^5.1.0",
+		"node-fetch": "^3.3.2"
 	}
 }
