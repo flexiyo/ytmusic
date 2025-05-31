@@ -174,9 +174,12 @@ app.get('/search', async (req, res) => {
 });
 
 app.get('/track', async (req, res) => {
-	const { videoId, searchTerm } = req.query;
+	const { videoId } = req.query;
+	const searchTerm =
+		(await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`).then((r) => r.ok && r.json()))
+			?.title || '';
 
-	if (!videoId && !searchTerm) return jsonResponse(res, { error: 'Missing video ID or search term' }, 400);
+	if (!videoId) return jsonResponse(res, { error: 'Missing video ID' }, 400);
 	try {
 		const { results } = await searchTracksInternal(`${videoId} ${searchTerm}`);
 		const result = results.find((item) => item.videoId === videoId) || results[0];

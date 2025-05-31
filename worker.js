@@ -147,8 +147,11 @@ async function searchTracks(request) {
 async function getTrackInfo(request) {
 	const { searchParams } = new URL(request.url);
 	const videoId = searchParams.get('videoId');
-	const searchTerm = searchParams.get('searchTerm');
-	if (!videoId && !searchTerm) return jsonResponse({ error: 'Missing video ID or search term' }, 400);
+	const searchTerm =
+		(await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`).then((r) => r.ok && r.json()))
+			?.title || '';
+
+	if (!videoId) return jsonResponse({ error: 'Missing video ID' }, 400);
 
 	try {
 		const { results } = await searchTracksInternal(`${videoId} ${searchTerm}`);
