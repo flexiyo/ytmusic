@@ -147,10 +147,11 @@ async function searchTracks(request) {
 async function getTrackInfo(request) {
 	const { searchParams } = new URL(request.url);
 	const videoId = searchParams.get('videoId');
-	if (!videoId) return jsonResponse({ error: 'Missing video ID' }, 400);
+	const searchTerm = searchParams.get('searchTerm');
+	if (!videoId && !searchTerm) return jsonResponse({ error: 'Missing video ID or search term' }, 400);
 
 	try {
-		const { results } = await searchTracksInternal(videoId);
+		const { results } = await searchTracksInternal(`${videoId} ${searchTerm}`);
 		const result = results.find((item) => item.videoId === videoId) || results[0];
 		if (!result) throw new Error('Track not found');
 

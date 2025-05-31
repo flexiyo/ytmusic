@@ -174,10 +174,11 @@ app.get('/search', async (req, res) => {
 });
 
 app.get('/track', async (req, res) => {
-	const { videoId } = req.query;
-	if (!videoId) return jsonResponse(res, { error: 'Missing video ID' }, 400);
+	const { videoId, searchTerm } = req.query;
+
+	if (!videoId && !searchTerm) return jsonResponse(res, { error: 'Missing video ID or search term' }, 400);
 	try {
-		const { results } = await searchTracksInternal(videoId);
+		const { results } = await searchTracksInternal(`${videoId} ${searchTerm}`);
 		const result = results.find((item) => item.videoId === videoId) || results[0];
 		if (!result) throw new Error('Track not found');
 		const parts = result.artists?.split(' • ') || [];
