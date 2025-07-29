@@ -185,7 +185,7 @@ async function handleSitemap(_, env) {
 	});
 }
 
-async function streamMp3Url(request, env, ctx) {
+async function streamMp3Url(request) {
 	const url = new URL(request.url);
 	const target = url.searchParams.get('url');
 
@@ -193,7 +193,7 @@ async function streamMp3Url(request, env, ctx) {
 		return jsonResponse({ error: 'Missing url param' }, 400);
 	}
 
-	const res = await fetch(target);
+	const res = await fetch(target, { headers: request.headers });
 
 	return new Response(res.body, {
 		status: res.status,
