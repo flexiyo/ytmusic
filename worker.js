@@ -77,8 +77,7 @@ export default {
 };
 
 const handlers = {
-	'/sitemap.xml': handleSitemap,
-	'/stream': streamMp3Url,
+	'/sitemap': handleSitemap,
 	'/search': searchTracks,
 	'/track': getTrackInfo,
 	'/next': getNextTrack,
@@ -185,26 +184,6 @@ async function handleSitemap(_, env) {
 	});
 }
 
-async function streamMp3Url(request) {
-	const url = new URL(request.url);
-	const target = url.searchParams.get('url');
-
-	if (!target) {
-		return jsonResponse({ error: 'Missing url param' }, 400);
-	}
-
-	const res = await fetch(target, { headers: request.headers });
-
-	return new Response(res.body, {
-		status: res.status,
-		headers: {
-			'Content-Type': res.headers.get('Content-Type') || 'application/octet-stream',
-			'Content-Disposition': 'attachment; filename="file.mp3"',
-			'Access-Control-Allow-Origin': '*',
-		},
-	});
-}
-
 async function searchTracksInternal(term, continuation = null) {
 	const body = continuation ? { continuation } : { query: term, params: 'EgWKAQIIAWoSEAMQBBAJEA4QChAFEBEQEBAV' };
 	const ytMusicData = await fetchYTMusic('search', body);
@@ -299,6 +278,7 @@ async function getTrackInfo(request, env) {
 			.toLowerCase()
 			.replace(/[^a-z0-9 ]+/g, '')
 			.replace(/\s+/g, '-')
+			.replace(/-+$/, '')
 			.slice(0, 10);
 
 		const slug = `${baseSlug}_${videoId}`;
