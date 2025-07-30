@@ -265,7 +265,7 @@ async function getTrackInfo(request, env) {
 		let images;
 		let playsCount;
 
-		if (result.videoDetails) {
+		if (result.videoDetails && result.videoDetails.title) {
 			artists = shortDescription.split('\n').filter((line) => line.trim() !== '')[1];
 			duration = ((s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`)(Number(lengthSeconds));
 			images = thumbnail.thumbnails;
@@ -282,7 +282,7 @@ async function getTrackInfo(request, env) {
 				)?.title || '';
 
 			const { results } = await searchTracksInternal(`${videoId} ${searchTerm}`);
-			result = results.find((item) => item.videoId === videoId) || results[0];
+			const result = results.find((item) => item.videoId === videoId) || results[0];
 			if (!result) throw new Error('Track not found');
 
 			artists = result.artists?.split(' • ') || [].join(' • ');
