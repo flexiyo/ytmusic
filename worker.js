@@ -259,27 +259,43 @@ async function searchTracks(request) {
 async function getTrackInfo(request, env) {
 	const { searchParams } = new URL(request.url);
 	const videoId = searchParams.get('videoId');
-	const searchTerm =
-		(await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`).then((r) => r.ok && r.json()))
-			?.title || '';
 
 	if (!videoId) return jsonResponse({ error: 'Missing video ID' }, 400);
 
 	try {
-		const { results } = await searchTracksInternal(`${videoId} ${searchTerm}`);
-		const result = results.find((item) => item.videoId === videoId) || results[0];
-		if (!result) throw new Error('Track not found');
+		const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+			headers: {
+				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+			},
+		});
 
-		const parts = result.artists?.split(' • ') || [];
-		const duration = parts.pop();
-		const artists = parts.join(' • ');
+		const html = await response.text();
+		const regex = html.match(/var ytInitialPlayerResponse = (.*?);\s*<\/script>/);
+
+		if (!regex) {
+			console.error('Could not extract ytInitialPlayerResponse');
+			throw new Error('Unable to find video data');
+		}
+
+		const result = JSON.parse(regex[1]);
+
+		const { title, lengthSeconds, keywords, shortDescription, thumbnail, viewCount } = result.videoDetails;
+
+		const artists = shortDescription.split('\n').filter((line) => line.trim() !== '')[1];
+		const duration = ((s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`)(Number(lengthSeconds));
+		const images = thumbnail.thumbnails;
+		const playsCount = ((n) =>
+			n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n)(
+			Number(viewCount)
+		);
+
 		const { tS, tH } = await fetchAndDeobfuscate(videoId);
 		if (!tS || !tH) throw new Error('Failed to fetch deobfuscated result');
 		const { playlistId, browseId } = await getRelativeTrackInfo(videoId);
 
 		const playedAt = new Date().toISOString();
 
-		const baseSlug = result.title
+		const baseSlug = title
 			.toLowerCase()
 			.replace(/[^a-z0-9 ]+/g, '')
 			.replace(/\s+/g, '-')
@@ -292,13 +308,14 @@ async function getTrackInfo(request, env) {
 		return jsonResponse({
 			success: true,
 			data: {
-				videoId: result.videoId,
+				videoId,
 				slug,
-				title: result.title,
+				title,
 				artists,
 				duration,
-				playsCount: result.playsCount,
-				images: result.images,
+				playsCount,
+				images,
+				keywords,
 				playlistId,
 				browseId,
 				tS,
@@ -306,6 +323,7 @@ async function getTrackInfo(request, env) {
 			},
 		});
 	} catch (error) {
+		console.error(Object(error));
 		return jsonResponse({ error: error.message }, 500);
 	}
 }
@@ -384,8 +402,7 @@ async function getSuggestions(request) {
 				suggestionText: content?.searchSuggestionRenderer?.suggestion?.runs?.[0]?.text,
 				suggestionQuery: content?.searchSuggestionRenderer?.navigationEndpoint?.searchEndpoint?.query,
 			}))
-			.filter(Boolean)
-			.slice(0, 5);
+			.filter(Boolean);
 
 		return jsonResponse({ success: true, data: { results: suggestions } });
 	} catch (error) {
