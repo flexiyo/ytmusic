@@ -321,7 +321,7 @@ async function getTrackInfo(request, env) {
 				duration,
 				playsCount,
 				images,
-				keywords: keywords.length ? keywords || [],
+				keywords: keywords.length ? keywords : [],
 				playlistId,
 				browseId,
 				tS,
