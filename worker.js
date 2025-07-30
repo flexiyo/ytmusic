@@ -258,14 +258,17 @@ async function getTrackInfo(request, env) {
 
 		const result = JSON.parse(regex[1]);
 
-		const { title, lengthSeconds, keywords, shortDescription, thumbnail, viewCount } = result.videoDetails;
-
+		let title;
 		let artists;
 		let duration;
 		let images;
 		let playsCount;
+		let keywords;
 
 		if (result.videoDetails && result.videoDetails.title) {
+			const { title, lengthSeconds, keywords, shortDescription, thumbnail, viewCount } = result.videoDetails;
+
+			title = title
 			artists = shortDescription.split('\n').filter((line) => line.trim() !== '')[1];
 			duration = ((s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`)(Number(lengthSeconds));
 			images = thumbnail.thumbnails;
@@ -274,14 +277,14 @@ async function getTrackInfo(request, env) {
 				Number(viewCount)
 			);
 		} else {
-			const searchTerm =
+			title =
 				(
 					await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`).then(
 						(r) => r.ok && r.json()
 					)
 				)?.title || '';
 
-			const { results } = await searchTracksInternal(`${videoId} ${searchTerm}`);
+			const { results } = await searchTracksInternal(`${videoId} ${title}`);
 			const result = results.find((item) => item.videoId === videoId) || results[0];
 			if (!result) throw new Error('Track not found');
 
@@ -318,7 +321,7 @@ async function getTrackInfo(request, env) {
 				duration,
 				playsCount,
 				images,
-				keywords,
+				keywords: keywords.length ? keywords || [],
 				playlistId,
 				browseId,
 				tS,
