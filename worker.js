@@ -260,13 +260,36 @@ async function getTrackInfo(request, env) {
 
 		const { title, lengthSeconds, keywords, shortDescription, thumbnail, viewCount } = result.videoDetails;
 
-		const artists = shortDescription.split('\n').filter((line) => line.trim() !== '')[1];
-		const duration = ((s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`)(Number(lengthSeconds));
-		const images = thumbnail.thumbnails;
-		const playsCount = ((n) =>
-			n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n)(
-			Number(viewCount)
-		);
+		let artists;
+		let duration;
+		let images;
+		let playsCount;
+
+		if (result.videoDetails) {
+			artists = shortDescription.split('\n').filter((line) => line.trim() !== '')[1];
+			duration = ((s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`)(Number(lengthSeconds));
+			images = thumbnail.thumbnails;
+			playsCount = ((n) =>
+				n >= 1e9 ? (n / 1e9).toFixed(1) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1) + 'K' : n)(
+				Number(viewCount)
+			);
+		} else {
+			const searchTerm =
+				(
+					await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`).then(
+						(r) => r.ok && r.json()
+					)
+				)?.title || '';
+
+			const { results } = await searchTracksInternal(`${videoId} ${searchTerm}`);
+			result = results.find((item) => item.videoId === videoId) || results[0];
+			if (!result) throw new Error('Track not found');
+
+			artists = result.artists?.split(' • ') || [].join(' • ');
+			duration = parts.pop();
+			images = result.images;
+			playsCount = result.playsCount;
+		}
 
 		const { tS, tH } = await fetchAndDeobfuscate(videoId);
 		if (!tS || !tH) throw new Error('Failed to fetch deobfuscated result');
