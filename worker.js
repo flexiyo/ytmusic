@@ -259,16 +259,17 @@ async function getTrackInfo(request, env) {
 		const result = JSON.parse(regex[1]);
 
 		let title;
+		let keywords = [];
 		let artists;
 		let duration;
 		let images;
 		let playsCount;
-		let keywords;
 
 		if (result.videoDetails && result.videoDetails.title) {
-			const { title, lengthSeconds, keywords, shortDescription, thumbnail, viewCount } = result.videoDetails;
+			const { lengthSeconds, shortDescription, thumbnail, viewCount } = result.videoDetails;
 
-			title = title
+			title =  result.videoDetails.title
+			keywords =  result.videoDetails.keywords
 			artists = shortDescription.split('\n').filter((line) => line.trim() !== '')[1];
 			duration = ((s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`)(Number(lengthSeconds));
 			images = thumbnail.thumbnails;
@@ -317,11 +318,11 @@ async function getTrackInfo(request, env) {
 				videoId,
 				slug,
 				title,
+				keywords,
 				artists,
 				duration,
 				playsCount,
 				images,
-				keywords: keywords.length ? keywords : [],
 				playlistId,
 				browseId,
 				tS,
